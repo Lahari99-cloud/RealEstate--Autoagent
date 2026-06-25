@@ -67,6 +67,21 @@ class LeadQualification(BaseModel):
     next_best_action: str
 
 
+class ComplianceReview(BaseModel):
+    jurisdiction: str = "UAE"
+    summary: str
+    required_checks: list[str] = Field(default_factory=list)
+    disclaimers: list[str] = Field(default_factory=list)
+    risk_level: str
+
+
+class ConversationTurn(BaseModel):
+    role: str
+    content: str
+    run_id: str | None = None
+    occurred_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
 class TraceEvent(BaseModel):
     sequence: int
     agent: str
@@ -80,6 +95,7 @@ class TraceEvent(BaseModel):
 class InquiryRequest(BaseModel):
     inquiry: str = Field(min_length=8, max_length=4000)
     require_approval: bool = True
+    conversation_id: str | None = Field(default=None, max_length=100)
 
 
 class ApprovalRequest(BaseModel):
@@ -91,8 +107,10 @@ class ApprovalRequest(BaseModel):
 class RunResponse(BaseModel):
     run_id: str
     status: str
+    conversation_id: str | None = None
     lead: Lead | None = None
     qualification: LeadQualification | None = None
+    compliance: ComplianceReview | None = None
     recommendations: list[Recommendation] = Field(default_factory=list)
     trace: list[TraceEvent] = Field(default_factory=list)
     approval_url: str | None = None
@@ -102,9 +120,12 @@ class RunResponse(BaseModel):
 class AgentState(TypedDict, total=False):
     run_id: str
     inquiry: str
+    conversation_id: str
+    memory_context: list[dict[str, Any]]
     require_approval: bool
     lead: dict[str, Any]
     qualification: dict[str, Any]
+    compliance: dict[str, Any]
     matches: list[dict[str, Any]]
     recommendations: list[dict[str, Any]]
     trace: list[dict[str, Any]]

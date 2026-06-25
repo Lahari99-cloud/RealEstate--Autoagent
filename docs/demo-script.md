@@ -15,6 +15,7 @@ Use `POST /v1/proposals`:
 ```json
 {
   "inquiry": "Looking for a 2 bedroom investment on Yas Island under AED 1.8M with good ROI",
+  "conversation_id": "demo-buyer-1",
   "require_approval": true
 }
 ```
@@ -27,6 +28,10 @@ Show:
 - AVM-style yield and risk calculations
 - mortgage affordability estimates
 - area rationale
+- RERA/compliance checklist
+- conversation memory via `GET /v1/conversations/demo-buyer-1`
+- observability via `GET /v1/observability/metrics`
+- evaluation dashboard via `GET /v1/evaluations/dashboard`
 - pending approval status
 
 ## 3. Approve the run

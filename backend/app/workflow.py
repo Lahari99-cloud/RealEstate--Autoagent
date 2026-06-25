@@ -7,7 +7,7 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command, interrupt
 
-from .agents import calculate_affordability, match_properties, parse_lead, price_properties, qualify_lead, research_areas
+from .agents import calculate_affordability, match_properties, parse_lead, price_properties, qualify_lead, research_areas, review_compliance
 from .domain import AgentState, Lead, LeadQualification, Recommendation, TraceEvent
 from .proposal import build_pdf
 
@@ -47,6 +47,7 @@ builder.add_node("matcher", match_properties)
 builder.add_node("pricer", price_properties)
 builder.add_node("affordability", calculate_affordability)
 builder.add_node("researcher", research_areas)
+builder.add_node("compliance_check", review_compliance)
 builder.add_node("approval_gate", approval_gate)
 builder.add_node("writer", write_proposal)
 builder.add_edge(START, "parser")
@@ -55,7 +56,8 @@ builder.add_edge("qualifier", "matcher")
 builder.add_edge("matcher", "pricer")
 builder.add_edge("pricer", "affordability")
 builder.add_edge("affordability", "researcher")
-builder.add_edge("researcher", "approval_gate")
+builder.add_edge("researcher", "compliance_check")
+builder.add_edge("compliance_check", "approval_gate")
 builder.add_conditional_edges("approval_gate", route_after_approval, {"writer": "writer", END: END})
 builder.add_edge("writer", END)
 graph = builder.compile(checkpointer=MemorySaver())
@@ -65,8 +67,10 @@ def config(run_id: str) -> dict[str, Any]:
     return {"configurable": {"thread_id": run_id}}
 
 
-def start_run(run_id: str, inquiry: str, require_approval: bool) -> dict[str, Any]:
-    return graph.invoke({"run_id": run_id, "inquiry": inquiry, "require_approval": require_approval,
+def start_run(run_id: str, inquiry: str, require_approval: bool, conversation_id: str | None = None,
+              memory_context: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+    return graph.invoke({"run_id": run_id, "inquiry": inquiry, "conversation_id": conversation_id or run_id,
+                         "memory_context": memory_context or [], "require_approval": require_approval,
                          "trace": [], "status": "running"}, config(run_id))
 
 

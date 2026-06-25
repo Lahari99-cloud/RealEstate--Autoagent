@@ -4,7 +4,7 @@
 
 An AI-powered real estate assistant designed for UAE property workflows. It supports property search, buyer qualification, multilingual conversations, valuation guidance, mortgage affordability estimates, proposal generation, and broker handoff.
 
-Built with Python, FastAPI, LangGraph agents, structured tool-style orchestration, local RAG-style ranking, PDF generation, and evaluation-first agent design.
+Built with Python, FastAPI, LangGraph agents, structured tool-style orchestration, local RAG-style ranking, conversation memory, observability endpoints, PDF generation, and evaluation-first agent design.
 
 ## Why this project matters
 
@@ -21,7 +21,8 @@ Buyer Inquiry
   -> Property Search Agent
   -> Valuation Agent
   -> Mortgage & Affordability Agent
-  -> Area / Compliance Context Agent
+  -> Area Intelligence Agent
+  -> RERA / Compliance Agent
   -> Broker Handoff Approval Gate
   -> Proposal Writer
   -> JSON response + PDF proposal
@@ -45,11 +46,15 @@ scripts/        Local demo utilities
 - LangGraph state-machine orchestration.
 - Buyer qualification from raw inquiry text.
 - CRM-ready lead score, stage, handoff summary, and next-best action.
-- Multilingual-aware parsing for Arabic/English-style WhatsApp leads.
+- Multilingual-aware parsing for English, Arabic, Hindi, and mixed-language WhatsApp leads.
 - Property matching against `data/psi_listings.json`.
 - AVM-style market value, yield, cash flow, and risk flag calculation.
 - Mortgage affordability estimates with down payment, loan amount, monthly payment, and income requirement.
 - Area context and investment rationale.
+- UAE/RERA-style compliance checklist and disclaimer generation.
+- Conversation memory via `conversation_id` and `/v1/conversations/{conversation_id}`.
+- Observability metrics via `/v1/observability/metrics`.
+- Evaluation dashboard foundation via `/v1/evaluations/dashboard`.
 - Human approval gate before PDF generation.
 - Safe observability traces for each agent step.
 - Client-ready PDF proposal output.
@@ -101,6 +106,7 @@ Use `POST /v1/proposals`:
 ```json
 {
   "inquiry": "Looking for a 2 bedroom investment on Yas Island under AED 1.8M with good ROI",
+  "conversation_id": "demo-buyer-1",
   "require_approval": true
 }
 ```
@@ -113,6 +119,7 @@ The response should show:
 - yield, cash-flow, and risk calculations
 - mortgage affordability and income requirement estimates
 - area rationale and nearby landmarks
+- compliance checklist and risk level
 - safe agent trace events
 - `status: pending_approval`
 - `approval_url`
@@ -129,6 +136,14 @@ Approve the run with `POST /v1/runs/{run_id}/approval`:
 
 The completed response returns a `pdf_url` for the generated investment proposal.
 
+Useful production-readiness endpoints:
+
+```text
+GET /v1/conversations/{conversation_id}
+GET /v1/observability/metrics
+GET /v1/evaluations/dashboard
+```
+
 ## Test
 
 ```powershell
@@ -137,13 +152,13 @@ python -m pytest -v
 
 ## Interview positioning
 
-This repository is an MVP focused on the core property recommendation workflow. It currently implements lead parsing, CRM lead qualification, property matching, valuation, mortgage affordability estimates, area intelligence, human approval, and proposal generation.
+This repository is an MVP focused on the core property recommendation workflow. It currently implements lead parsing, CRM lead qualification, property matching, valuation, mortgage affordability estimates, area intelligence, UAE/RERA-style compliance guidance, conversation memory, observability metrics, a basic evaluation dashboard, human approval, and proposal generation.
 
-The architecture is intentionally modular so additional production agents, such as RERA/compliance guidance, Redis conversation memory, production observability, and evaluation dashboards, can be added without changing the orchestration layer.
+The architecture is intentionally modular so production-grade upgrades, such as Redis-backed memory, Langfuse/OpenTelemetry export, and full evaluation dashboards, can be added without changing the orchestration layer.
 
 ## Evaluation status
 
-The repository includes API and workflow tests as the foundation of an evaluation framework. Production-grade agent evaluation, including golden datasets, LLM-as-judge checks, regression tracking, latency metrics, and cost dashboards, is planned for the next iteration.
+The repository includes API and workflow tests plus a dashboard endpoint as the foundation of an evaluation framework. Production-grade agent evaluation, including golden datasets, LLM-as-judge checks, regression tracking, latency metrics, and cost dashboards, is planned for the next iteration.
 
 ## Production evolution
 
@@ -153,9 +168,8 @@ Recommended production upgrades:
 
 - ChromaDB, OpenSearch, or pgvector for production-scale semantic search
 - durable LangGraph checkpointing
-- RERA/compliance guidance agent
-- Redis conversation memory
-- OpenTelemetry or Langfuse observability
+- Redis-backed conversation memory
+- OpenTelemetry or Langfuse observability export
 - full evaluation framework with golden datasets, LLM-as-judge checks, regression tracking, latency dashboards, and cost metrics
 - OAuth/RBAC
 - tenant isolation

@@ -7,7 +7,7 @@ from collections import Counter
 from typing import Any, Callable
 
 from .data import AREA_CONTEXT, LISTINGS
-from .domain import AgentState, Lead, LeadQualification, Listing, Recommendation, TraceEvent
+from .domain import AgentState, ComplianceReview, Lead, LeadQualification, Listing, Recommendation, TraceEvent
 
 
 def _timed(agent: str, state: AgentState, work: Callable[[], tuple[dict[str, Any], str, float | None]]) -> dict[str, Any]:
@@ -22,9 +22,15 @@ def _timed(agent: str, state: AgentState, work: Callable[[], tuple[dict[str, Any
 
 
 AREA_ALIASES = {
-    "reem": "Al Reem Island", "الريم": "Al Reem Island", "جزيرة الريم": "Al Reem Island",
-    "yas": "Yas Island", "ياس": "Yas Island", "saadiyat": "Saadiyat Island",
-    "السعديات": "Saadiyat Island", "masdar": "Masdar City", "مصدر": "Masdar City",
+    "reem": "Al Reem Island", "?????": "Al Reem Island", "????? ?????": "Al Reem Island",
+    "yas": "Yas Island", "???": "Yas Island", "saadiyat": "Saadiyat Island", "????????": "Saadiyat Island",
+    "masdar": "Masdar City", "????": "Masdar City", "?? ???": "Al Reem Island", "???": "Yas Island", "????": "Masdar City",
+}
+
+BEDROOM_WORDS = {
+    "one": 1, "two": 2, "three": 3, "four": 4,
+    "????": 1, "????": 1, "??????": 2, "????": 3, "?????": 3, "????": 4,
+    "??": 1, "??": 2, "???": 3, "???": 4,
 }
 
 
@@ -35,8 +41,8 @@ def parse_lead(state: AgentState) -> dict[str, Any]:
         area = next((name for alias, name in AREA_ALIASES.items() if alias in lower), "Al Reem Island")
         bed_match = re.search(r"\b(\d+)\s*(?:bhk|bed(?:room)?s?)\b", lower)
         bedrooms = int(bed_match.group(1)) if bed_match else next(
-            (value for word, value in {"one": 1, "two": 2, "three": 3, "four": 4}.items()
-             if re.search(rf"\b{word}\s+bed(?:room)?s?\b", lower)), None)
+            (value for word, value in BEDROOM_WORDS.items()
+             if word in lower and any(token in lower for token in ["bed", "bedroom", "bhk", "???", "????", "????", "??????"])), None)
         money = (re.search(r"\baed\s*(\d[\d,.]*)\s*(m|mn|million|k)?\b", lower)
                  or re.search(r"\b(?:budget|under|around|up to|cap(?:ped)? at)\D{0,20}(\d[\d,.]*)\s*(m|mn|million|k)?\b", lower)
                  or re.search(r"\b(\d+(?:\.\d+)?)\s*(m|mn|million)\b", lower))
@@ -48,9 +54,20 @@ def parse_lead(state: AgentState) -> dict[str, Any]:
             if budget < 100_000:
                 budget = 1_500_000
         must_haves = [term for term in ["chiller free", "post-handover payment plan", "sea view", "ready to move"] if term in lower]
-        language = "Mixed Arabic/English" if re.search(r"[\u0600-\u06ff]", text) else "English"
-        purpose = "end_use" if any(x in lower for x in ["live in", "family home", "move in"]) else "investment"
-        timeline = "ready to move" if any(x in lower for x in ["ready to move", "immediately", "now"]) else "flexible"
+        has_arabic = bool(re.search(r"[\u0600-\u06ff]", text))
+        has_devanagari = bool(re.search(r"[\u0900-\u097f]", text))
+        if has_arabic and re.search(r"[a-zA-Z]", text):
+            language = "Mixed Arabic/English"
+        elif has_devanagari and re.search(r"[a-zA-Z]", text):
+            language = "Mixed Hindi/English"
+        elif has_arabic:
+            language = "Arabic"
+        elif has_devanagari:
+            language = "Hindi"
+        else:
+            language = "English"
+        purpose = "end_use" if any(x in lower for x in ["live in", "family home", "move in", "???", "?????", "??????", "????"]) else "investment"
+        timeline = "ready to move" if any(x in lower for x in ["ready to move", "immediately", "now", "????", "???", "?????"]) else "flexible"
         lead = Lead(budget_aed=budget, preferred_areas=[area], bedrooms=bedrooms, purpose=purpose,
                     timeline=timeline, language=language, must_haves=must_haves, confidence=0.91)
         return {"lead": lead.model_dump(mode="json")}, f"Normalized {language} lead: AED {budget:,}, {bedrooms or 'any'} beds, {area}.", 0.91
@@ -183,3 +200,28 @@ def research_areas(state: AgentState) -> dict[str, Any]:
             enriched.append(rec.model_dump(mode="json"))
         return {"recommendations": enriched, "status": "pending_approval"}, "Added curated area rationale and nearby landmarks with source-ready boundaries.", 0.9
     return _timed("Area Researcher", state, work)
+
+
+
+def review_compliance(state: AgentState) -> dict[str, Any]:
+    def work():
+        recommendations = [Recommendation.model_validate(raw) for raw in state["recommendations"]]
+        required_checks = [
+            "Verify listing availability and seller authority before sharing with buyer.",
+            "Confirm advertised price, service charges, payment plan, and handover status with source records.",
+            "Use approved broker/RERA-compliant wording for any marketing claim.",
+            "Treat ROI, rent, mortgage, and valuation outputs as estimates, not guarantees.",
+        ]
+        risk_level = "review_required" if any(rec.risk_flags for rec in recommendations) else "standard"
+        review = ComplianceReview(
+            summary="UAE/RERA-style compliance screen completed for proposal handoff. Advisor verification is required before client delivery.",
+            required_checks=required_checks,
+            disclaimers=[
+                "This is decision support, not a formal valuation certificate.",
+                "Mortgage estimates are illustrative and subject to bank approval.",
+                "Property availability and commercial terms must be revalidated by a licensed advisor.",
+            ],
+            risk_level=risk_level,
+        )
+        return {"compliance": review.model_dump(mode="json")}, f"Generated UAE/RERA-style compliance checklist with {risk_level} risk level.", 0.82
+    return _timed("RERA / Compliance Agent", state, work)
