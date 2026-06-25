@@ -153,13 +153,6 @@ POST /v1/evaluations/run
 ```powershell
 python -m pytest -v
 ```
-
-## Interview positioning
-
-This repository is an MVP focused on the core property recommendation workflow. It currently implements lead parsing, CRM lead qualification, property matching, valuation, mortgage affordability estimates, area intelligence, UAE/RERA-style compliance guidance, conversation memory, observability metrics, a basic evaluation dashboard, human approval, and proposal generation.
-
-The architecture is intentionally modular so production-grade upgrades, such as Redis-backed memory, Langfuse/OpenTelemetry export, and full evaluation dashboards, can be added without changing the orchestration layer.
-
 ## Evaluation layer
 
 The repository includes a concrete evaluation foundation:
@@ -173,20 +166,4 @@ The repository includes a concrete evaluation foundation:
 
 Production-grade extensions such as LLM-as-judge review, historical trend tracking, CI quality gates, latency metrics, and cost dashboards are planned for the next iteration.
 
-## Production evolution
 
-This MVP uses LangGraph `MemorySaver`, so run state is in memory. In production, replace it with a durable checkpoint store such as Postgres or Redis so approvals survive restarts.
-
-Recommended production upgrades:
-
-- ChromaDB, OpenSearch, or pgvector for production-scale semantic search
-- durable LangGraph checkpointing
-- Redis-backed conversation memory
-- OpenTelemetry or Langfuse observability export
-- LLM-as-judge checks, historical regression tracking, latency dashboards, and cost metrics
-- OAuth/RBAC
-- tenant isolation
-- signed object-storage URLs for PDFs
-- PII redaction
-- prompt/version registry
-- AVM timeout and circuit-breaker policies
