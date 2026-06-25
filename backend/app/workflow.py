@@ -12,7 +12,7 @@ from .domain import AgentState, Lead, Recommendation, TraceEvent
 from .proposal import build_pdf
 
 
-OUTPUT_DIR = Path(__file__).resolve().parents[1] / "artifacts"
+OUTPUT_DIR = Path(__file__).resolve().parents[2] / "artifacts"
 
 
 def approval_gate(state: AgentState) -> dict[str, Any]:

@@ -11,7 +11,7 @@ from .domain import ApprovalRequest, InquiryRequest, RunResponse
 from .workflow import OUTPUT_DIR, get_state, resume_run, start_run
 
 
-app = FastAPI(title="PSI AutoAgent", version="0.1.0",
+app = FastAPI(title="RealEstate AutoAgent", version="0.1.0",
               description="Observable, human-governed investment proposal automation")
 
 
@@ -81,4 +81,3 @@ async def stream_events(run_id: str, request: Request) -> StreamingResponse:
             if state.get("status") in {"completed", "rejected"}: return
             await asyncio.sleep(1)
     return StreamingResponse(events(), media_type="text/event-stream")
-

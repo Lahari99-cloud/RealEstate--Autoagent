@@ -7,7 +7,7 @@ from typing import Any
 from .domain import Listing
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 PSI_LISTINGS_PATH = PROJECT_ROOT / "data" / "psi_listings.json"
 
 

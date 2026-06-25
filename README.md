@@ -1,48 +1,73 @@
-# Real Estate AutoAgent
+# RealEstate AutoAgent
 
-An interview-ready, production-shaped backend that turns a raw UAE property buyer inquiry into an approved investment proposal PDF.
+**AI Assistant for UAE Property Search, Valuation, and Lead Qualification**
 
-The project demonstrates how a real estate company can compress a manual 45-90 minute agent workflow into an auditable, human-governed automation pipeline.
+An AI-powered real estate assistant designed for UAE property workflows. It supports property search, buyer qualification, multilingual conversations, valuation guidance, proposal generation, and broker handoff.
 
-## What it does
+Built with Python, FastAPI, LangGraph agents, structured tool-style orchestration, local RAG-style ranking, PDF generation, and evaluation-first agent design.
+
+## Why this project matters
+
+Real estate agents often spend 45-90 minutes turning one raw buyer message into a useful investment proposal: reading the inquiry, qualifying intent, searching listings, checking prices, estimating ROI, writing the proposal, and preparing a PDF.
+
+RealEstate AutoAgent compresses that workflow into an auditable backend pipeline with a human approval gate before client-facing output.
+
+## Agent workflow
 
 ```text
-Raw buyer inquiry
-  -> Lead Parser
-  -> Property Matcher
-  -> AVM Pricer
-  -> Area Researcher
-  -> Human Approval Gate
+Buyer Inquiry
+  -> Buyer Agent / Lead Parser
+  -> Property Search Agent
+  -> Valuation Agent
+  -> Area / Compliance Context Agent
+  -> Broker Handoff Approval Gate
   -> Proposal Writer
   -> JSON response + PDF proposal
 ```
 
-## Why it is enterprise-grade
+## Repository structure
 
-- LangGraph orchestration with typed shared state.
-- Human approval gate before client-facing PDF generation.
-- Safe observability traces showing agent name, status, duration, confidence, and summaries.
-- UAE-aware parsing for mixed Arabic/English, `3BHK`, `AED 1.8M`, and area names.
-- Real listing inventory loaded from `data/psi_listings.json`.
-- Investment calculations for estimated market value, gross yield, net yield, cash flow, and risk flags.
-- Polished proposal PDF generated with ReportLab.
-- Local demo mode that runs without an LLM key.
+```text
+backend/        FastAPI app, LangGraph workflow, domain models, proposal builder
+agents/         Agent responsibility and orchestration notes
+data/           UAE/PSI-style property listing inventory
+evals/          API and workflow regression tests
+docs/           Demo script and interview notes
+frontend/       Placeholder for future broker-facing UI
+artifacts/      Generated proposal PDFs, ignored except .gitkeep
+scripts/        Local demo utilities
+```
+
+## Enterprise-grade features
+
+- LangGraph state-machine orchestration.
+- Buyer qualification from raw inquiry text.
+- Multilingual-aware parsing for Arabic/English-style WhatsApp leads.
+- Property matching against `data/psi_listings.json`.
+- AVM-style market value, yield, cash flow, and risk flag calculation.
+- Area context and investment rationale.
+- Human approval gate before PDF generation.
+- Safe observability traces for each agent step.
+- Client-ready PDF proposal output.
+- Evaluation tests for parsing, rejection, approval, and data loading.
 
 ## Tech stack
 
+- Python
 - FastAPI
 - LangGraph
 - Pydantic
 - ReportLab
 - Pytest
+- Docker / Docker Compose
 
 ## Run locally
 
 ```powershell
 git clone https://github.com/Lahari99-cloud/RealEstate--Autoagent.git
 cd RealEstate--Autoagent
-python -m pip install -e ".[dev]"
-python -m uvicorn app.main:app --reload
+python -m pip install -r requirements.txt
+python -m uvicorn backend.app.main:app --reload
 ```
 
 Open:
@@ -57,26 +82,36 @@ Health check:
 http://127.0.0.1:8000/healthz
 ```
 
+## Run with Docker
+
+```powershell
+docker compose up --build
+```
+
+Then open `http://127.0.0.1:8000/docs`.
+
 ## Demo request
 
-Use `POST /v1/proposals` with:
+Use `POST /v1/proposals`:
 
 ```json
 {
-  "inquiry": "مرحبا, I am looking for a 3BHK on Al Reem Island. My budget is 1.5M. Ready to move in. Shukran.",
+  "inquiry": "Looking for a 2 bedroom investment on Yas Island under AED 1.8M with good ROI",
   "require_approval": true
 }
 ```
 
-Check that the response includes:
+The response should show:
 
-- parsed budget, bedrooms, area, language, and timeline
-- three ranked property recommendations
-- safe trace events from the parser, matcher, pricer, and researcher
+- parsed budget, bedrooms, area, purpose, language, and timeline
+- three ranked recommendations from the connected listing inventory
+- yield, cash-flow, and risk calculations
+- area rationale and nearby landmarks
+- safe agent trace events
 - `status: pending_approval`
-- an `approval_url`
+- `approval_url`
 
-Then approve the run with `POST /v1/runs/{run_id}/approval`:
+Approve the run with `POST /v1/runs/{run_id}/approval`:
 
 ```json
 {
@@ -86,7 +121,7 @@ Then approve the run with `POST /v1/runs/{run_id}/approval`:
 }
 ```
 
-The completed response returns a `pdf_url` for the generated proposal.
+The completed response returns a `pdf_url` for the generated investment proposal.
 
 ## Test
 
@@ -94,15 +129,25 @@ The completed response returns a `pdf_url` for the generated proposal.
 python -m pytest -v
 ```
 
-## Notes for production
+## Interview positioning
+
+This project is designed as a PSI-style real estate AI demo:
+
+- Buyer Agent qualifies the lead.
+- Property Search Agent ranks listings.
+- Valuation Agent estimates investment quality.
+- Area / Compliance Context Agent explains the rationale.
+- Broker Handoff Agent keeps the human in control.
+- Evaluation Layer proves the workflow still works after changes.
+
+## Production evolution
 
 This MVP uses LangGraph `MemorySaver`, so run state is in memory. In production, replace it with a durable checkpoint store such as Postgres or Redis so approvals survive restarts.
 
-The matcher currently uses a deterministic local vector-style ranking boundary. ChromaDB or OpenSearch can be added behind the same matcher interface for production-scale semantic search.
-
 Recommended production upgrades:
 
-- persistent LangGraph checkpointing
+- ChromaDB, OpenSearch, or pgvector for production-scale semantic search
+- durable LangGraph checkpointing
 - OAuth/RBAC
 - tenant isolation
 - signed object-storage URLs for PDFs

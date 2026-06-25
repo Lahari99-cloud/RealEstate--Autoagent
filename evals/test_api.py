@@ -2,8 +2,8 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from app.data import LISTINGS
-from app.main import app
+from backend.app.data import LISTINGS
+from backend.app.main import app
 
 
 client = TestClient(app)
