@@ -46,9 +46,25 @@ class Recommendation(BaseModel):
     gross_yield_pct: float
     net_yield_pct: float
     annual_cash_flow_aed: int
+    down_payment_aed: int = 0
+    estimated_loan_aed: int = 0
+    monthly_payment_aed: int = 0
+    income_required_aed: int = 0
+    affordability_note: str = ""
     area_rationale: str = ""
     nearby: list[str] = Field(default_factory=list)
     risk_flags: list[str] = Field(default_factory=list)
+
+
+class LeadQualification(BaseModel):
+    score: int = Field(ge=0, le=100)
+    intent: str
+    budget_confidence: str
+    timeline_urgency: str
+    financing_readiness: str
+    crm_stage: str
+    handoff_summary: str
+    next_best_action: str
 
 
 class TraceEvent(BaseModel):
@@ -76,6 +92,7 @@ class RunResponse(BaseModel):
     run_id: str
     status: str
     lead: Lead | None = None
+    qualification: LeadQualification | None = None
     recommendations: list[Recommendation] = Field(default_factory=list)
     trace: list[TraceEvent] = Field(default_factory=list)
     approval_url: str | None = None
@@ -87,10 +104,10 @@ class AgentState(TypedDict, total=False):
     inquiry: str
     require_approval: bool
     lead: dict[str, Any]
+    qualification: dict[str, Any]
     matches: list[dict[str, Any]]
     recommendations: list[dict[str, Any]]
     trace: list[dict[str, Any]]
     approval: dict[str, Any]
     pdf_path: str
     status: str
-

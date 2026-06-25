@@ -24,8 +24,21 @@ def test_mixed_language_lead_pauses_then_generates_pdf():
     assert data["lead"]["budget_aed"] == 1_500_000
     assert data["lead"]["bedrooms"] == 3
     assert data["lead"]["language"] == "Mixed Arabic/English"
+    assert data["qualification"]["score"] >= 70
+    assert data["qualification"]["crm_stage"] in {"marketing-qualified lead", "sales-qualified lead"}
     assert len(data["recommendations"]) == 3
-    assert len(data["trace"]) == 4
+    assert data["recommendations"][0]["monthly_payment_aed"] > 0
+    assert data["recommendations"][0]["income_required_aed"] > 0
+    assert "affordability" in data["recommendations"][0]["affordability_note"].lower() or data["recommendations"][0]["affordability_note"]
+    assert len(data["trace"]) == 6
+    assert [event["agent"] for event in data["trace"]] == [
+        "Lead Parser",
+        "Lead Qualification Agent",
+        "Property Matcher",
+        "AVM Pricer",
+        "Mortgage & Affordability Agent",
+        "Area Researcher",
+    ]
 
     approved = client.post(data["approval_url"], json={"approved": True, "reviewer": "Demo Agent", "note": "Verified"})
     result = approved.json()

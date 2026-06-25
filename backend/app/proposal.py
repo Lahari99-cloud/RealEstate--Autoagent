@@ -9,7 +9,7 @@ from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
 from reportlab.platypus import HRFlowable, PageBreak, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
-from .domain import Lead, Recommendation
+from .domain import Lead, LeadQualification, Recommendation
 
 
 GOLD = colors.HexColor("#B78A3D")
@@ -18,7 +18,8 @@ SLATE = colors.HexColor("#526274")
 PALE = colors.HexColor("#F3F6F8")
 
 
-def build_pdf(run_id: str, lead: Lead, recommendations: list[Recommendation], output_dir: Path) -> Path:
+def build_pdf(run_id: str, lead: Lead, recommendations: list[Recommendation], output_dir: Path,
+              qualification: LeadQualification | None = None) -> Path:
     output_dir.mkdir(parents=True, exist_ok=True)
     path = output_dir / f"psi-investment-proposal-{run_id}.pdf"
     doc = SimpleDocTemplate(str(path), pagesize=A4, rightMargin=18*mm, leftMargin=18*mm,
@@ -44,7 +45,23 @@ def build_pdf(run_id: str, lead: Lead, recommendations: list[Recommendation], ou
                                ("INNERGRID", (0,0), (-1,-1), .25, colors.HexColor("#DDE3E8")),
                                ("LEFTPADDING", (0,0), (-1,-1), 10), ("TOPPADDING", (0,0), (-1,-1), 7),
                                ("BOTTOMPADDING", (0,0), (-1,-1), 7)]))
-    story += [table, Spacer(1, 9*mm), Paragraph("TOP STRATEGIC MATCHES", styles["Brand"])]
+    story += [table, Spacer(1, 9*mm)]
+    if qualification:
+        q_table = Table([
+            ["CRM LEAD SCORE", f"{qualification.score}/100"],
+            ["CRM STAGE", qualification.crm_stage.title()],
+            ["NEXT BEST ACTION", qualification.next_best_action],
+        ], colWidths=[50*mm, 105*mm], hAlign="LEFT")
+        q_table.setStyle(TableStyle([("BACKGROUND", (0,0), (-1,-1), colors.HexColor("#FFF8EA")),
+                                     ("TEXTCOLOR", (0,0), (0,-1), SLATE),
+                                     ("TEXTCOLOR", (1,0), (1,-1), NAVY),
+                                     ("FONTNAME", (0,0), (0,-1), "Helvetica-Bold"),
+                                     ("FONTSIZE", (0,0), (-1,-1), 9),
+                                     ("BOX", (0,0), (-1,-1), .5, colors.HexColor("#E8D5AC")),
+                                     ("LEFTPADDING", (0,0), (-1,-1), 10), ("TOPPADDING", (0,0), (-1,-1), 7),
+                                     ("BOTTOMPADDING", (0,0), (-1,-1), 7)]))
+        story += [q_table, Spacer(1, 8*mm)]
+    story += [Paragraph("TOP STRATEGIC MATCHES", styles["Brand"])]
     for index, rec in enumerate(recommendations, 1):
         l = rec.listing
         tags = f"{l.area}  ·  {l.bedrooms} bedrooms  ·  {l.size_sqft:,} sq ft  ·  {l.status.title()}"
@@ -53,10 +70,14 @@ def build_pdf(run_id: str, lead: Lead, recommendations: list[Recommendation], ou
                               ParagraphStyle("Metric", parent=styles["BodyMuted"], alignment=TA_RIGHT))]]
         metric_table = Table(metrics, colWidths=[90*mm, 60*mm])
         risk = " · ".join(rec.risk_flags) if rec.risk_flags else "No material rule-based flags detected"
+        affordability = (f"Down payment AED {rec.down_payment_aed:,}; estimated mortgage AED {rec.estimated_loan_aed:,}; "
+                         f"monthly payment AED {rec.monthly_payment_aed:,}; income required AED {rec.income_required_aed:,}. "
+                         f"{rec.affordability_note}")
         card = [[Paragraph(f"{index:02d}  {l.title}", styles["CardTitle"])],
                 [Paragraph(tags, styles["BodyMuted"])], [Spacer(1, 2*mm)],
                 [Paragraph(l.description, styles["BodyMuted"])], [metric_table],
                 [Paragraph(f"<b>Investment case:</b> {rec.area_rationale}", styles["BodyMuted"])],
+                [Paragraph(f"<b>Mortgage / affordability:</b> {affordability}", styles["BodyMuted"])],
                 [Paragraph(f"<b>Nearby:</b> {', '.join(rec.nearby)}", styles["BodyMuted"])],
                 [Paragraph(f"<b>Risk screen:</b> {risk}", styles["BodyMuted"])]]
         box = Table(card, colWidths=[160*mm], hAlign="LEFT")
@@ -69,4 +90,3 @@ def build_pdf(run_id: str, lead: Lead, recommendations: list[Recommendation], ou
               Paragraph("Illustrative estimates only. Rental income, service charges, financing, vacancy and market values can change. This proposal is decision support, not a valuation certificate or guaranteed return. A PSI advisor must verify availability and commercial terms before client delivery.", styles["BodyMuted"])]
     doc.build(story)
     return path
-

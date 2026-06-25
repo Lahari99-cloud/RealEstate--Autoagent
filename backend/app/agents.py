@@ -6,10 +6,8 @@ import time
 from collections import Counter
 from typing import Any, Callable
 
-import httpx
-
 from .data import AREA_CONTEXT, LISTINGS
-from .domain import AgentState, Lead, Listing, Recommendation, TraceEvent
+from .domain import AgentState, Lead, LeadQualification, Listing, Recommendation, TraceEvent
 
 
 def _timed(agent: str, state: AgentState, work: Callable[[], tuple[dict[str, Any], str, float | None]]) -> dict[str, Any]:
@@ -59,6 +57,40 @@ def parse_lead(state: AgentState) -> dict[str, Any]:
     return _timed("Lead Parser", state, work)
 
 
+def qualify_lead(state: AgentState) -> dict[str, Any]:
+    def work():
+        lead = Lead.model_validate(state["lead"])
+        inquiry = state["inquiry"].lower()
+        score = 35
+        if lead.budget_aed > 0:
+            score += 20
+        if lead.preferred_areas:
+            score += 15
+        if lead.bedrooms is not None:
+            score += 10
+        if lead.timeline in {"ready to move", "immediately", "now"} or any(x in inquiry for x in ["immediately", "urgent", "this month", "ready to move"]):
+            score += 10
+        if any(x in inquiry for x in ["mortgage", "cash", "pre-approved", "preapproved", "finance", "down payment"]):
+            score += 10
+        score = min(score, 100)
+        budget_confidence = "high" if lead.budget_aed >= 1_000_000 else "medium"
+        timeline_urgency = "hot" if lead.timeline == "ready to move" else "nurture"
+        financing_readiness = "mentioned" if any(x in inquiry for x in ["mortgage", "cash", "pre-approved", "preapproved", "finance", "down payment"]) else "unknown"
+        crm_stage = "sales-qualified lead" if score >= 80 else "marketing-qualified lead" if score >= 60 else "needs qualification"
+        qualification = LeadQualification(
+            score=score,
+            intent=lead.purpose.value,
+            budget_confidence=budget_confidence,
+            timeline_urgency=timeline_urgency,
+            financing_readiness=financing_readiness,
+            crm_stage=crm_stage,
+            handoff_summary=f"{score}/100 {crm_stage}: {lead.bedrooms or 'flexible'} beds in {', '.join(lead.preferred_areas)} with AED {lead.budget_aed:,} budget.",
+            next_best_action="Confirm financing method and schedule a broker call within 24 hours." if score >= 75 else "Ask follow-up questions on financing, move timeline, and must-have amenities.",
+        )
+        return {"qualification": qualification.model_dump(mode="json")}, f"Scored lead at {score}/100 and prepared CRM handoff guidance.", 0.86
+    return _timed("Lead Qualification Agent", state, work)
+
+
 def _tokens(text: str) -> Counter[str]:
     return Counter(re.findall(r"[a-z0-9]+", text.lower()))
 
@@ -106,6 +138,39 @@ def price_properties(state: AgentState) -> dict[str, Any]:
                 risk_flags=risks).model_dump(mode="json"))
         return {"recommendations": output}, "Calculated market value, gross/net yield, cash flow and explicit risk flags for 3 properties.", 0.87
     return _timed("AVM Pricer", state, work)
+
+
+def calculate_affordability(state: AgentState) -> dict[str, Any]:
+    def work():
+        lead = Lead.model_validate(state["lead"])
+        enriched = []
+        annual_rate = 0.049
+        monthly_rate = annual_rate / 12
+        term_months = 25 * 12
+        max_payment_from_budget = round((lead.budget_aed * 0.80) * monthly_rate / (1 - (1 + monthly_rate) ** -term_months))
+        for raw in state["recommendations"]:
+            rec = Recommendation.model_validate(raw)
+            price = rec.listing.price_aed
+            down_payment_rate = 0.20 if price <= 5_000_000 else 0.30
+            down_payment = round(price * down_payment_rate)
+            loan = price - down_payment
+            payment = round(loan * monthly_rate / (1 - (1 + monthly_rate) ** -term_months))
+            income_required = round(payment / 0.40)
+            rec.down_payment_aed = down_payment
+            rec.estimated_loan_aed = loan
+            rec.monthly_payment_aed = payment
+            rec.income_required_aed = income_required
+            if price <= lead.budget_aed:
+                rec.affordability_note = "Within stated purchase budget under the demo affordability policy."
+            elif payment <= max_payment_from_budget * 1.10:
+                rec.affordability_note = "Above stated price budget, but monthly payment is near the buyer's implied range."
+            else:
+                rec.affordability_note = "Above stated budget; broker should re-confirm affordability or present a lower-price alternative."
+                if "Affordability revalidation recommended" not in rec.risk_flags:
+                    rec.risk_flags.append("Affordability revalidation recommended")
+            enriched.append(rec.model_dump(mode="json"))
+        return {"recommendations": enriched}, "Estimated down payment, loan amount, monthly payment and income requirement for each recommendation.", 0.84
+    return _timed("Mortgage & Affordability Agent", state, work)
 
 
 def research_areas(state: AgentState) -> dict[str, Any]:

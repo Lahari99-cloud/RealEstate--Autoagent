@@ -18,7 +18,7 @@ app = FastAPI(title="RealEstate AutoAgent", version="0.1.0",
 def serialize(run_id: str, state: dict) -> RunResponse:
     status = state.get("status", "pending_approval")
     pdf_url = f"/v1/runs/{run_id}/proposal.pdf" if status == "completed" else None
-    return RunResponse(run_id=run_id, status=status, lead=state.get("lead"),
+    return RunResponse(run_id=run_id, status=status, lead=state.get("lead"), qualification=state.get("qualification"),
                        recommendations=state.get("recommendations", []), trace=state.get("trace", []),
                        approval_url=f"/v1/runs/{run_id}/approval" if status == "pending_approval" else None,
                        pdf_url=pdf_url)
@@ -26,7 +26,7 @@ def serialize(run_id: str, state: dict) -> RunResponse:
 
 @app.get("/healthz")
 def health() -> dict:
-    return {"status": "ok", "service": "psi-autoagent"}
+    return {"status": "ok", "service": "real-estate-autoagent"}
 
 
 @app.post("/v1/proposals", response_model=RunResponse, status_code=202)

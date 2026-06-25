@@ -22,8 +22,10 @@ Use `POST /v1/proposals`:
 Show:
 
 - structured lead extraction
+- CRM-ready lead qualification score
 - ranked recommendations from 109 connected listings
 - AVM-style yield and risk calculations
+- mortgage affordability estimates
 - area rationale
 - pending approval status
 
@@ -43,4 +45,4 @@ Open the returned `pdf_url`.
 
 ## Interview positioning
 
-“This compresses a 45-90 minute broker workflow into an auditable, human-governed agent pipeline.”
+"This compresses a 45-90 minute broker workflow into an auditable, human-governed agent pipeline."
