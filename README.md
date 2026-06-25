@@ -129,29 +129,5 @@ The completed response returns a `pdf_url` for the generated investment proposal
 python -m pytest -v
 ```
 
-## Interview positioning
 
-This project is designed as a PSI-style real estate AI demo:
-
-- Buyer Agent qualifies the lead.
-- Property Search Agent ranks listings.
-- Valuation Agent estimates investment quality.
-- Area / Compliance Context Agent explains the rationale.
-- Broker Handoff Agent keeps the human in control.
-- Evaluation Layer proves the workflow still works after changes.
-
-## Production evolution
-
-This MVP uses LangGraph `MemorySaver`, so run state is in memory. In production, replace it with a durable checkpoint store such as Postgres or Redis so approvals survive restarts.
-
-Recommended production upgrades:
-
-- ChromaDB, OpenSearch, or pgvector for production-scale semantic search
-- durable LangGraph checkpointing
-- OAuth/RBAC
-- tenant isolation
-- signed object-storage URLs for PDFs
-- PII redaction
-- prompt/version registry
-- OpenTelemetry tracing
 - AVM timeout and circuit-breaker policies
