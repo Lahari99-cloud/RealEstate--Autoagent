@@ -1,5 +1,5 @@
 [project]
-name = "psi-autoagent"
+name = "real-estate-auto-agent"
 version = "0.1.0"
 description = "Observable, human-governed property investment proposal agent"
 requires-python = ">=3.11"
@@ -20,4 +20,3 @@ dev = ["pytest>=8,<9"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
-
