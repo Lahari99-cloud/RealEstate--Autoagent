@@ -1,0 +1,82 @@
+[
+  {
+    "id": "yas_investor_mortgage",
+    "inquiry": "Looking for a 2 bedroom investment on Yas Island under AED 1.8M with good ROI and mortgage options.",
+    "expected": {
+      "area": "Yas Island",
+      "bedrooms": 2,
+      "budget_aed": 1800000,
+      "language": "English",
+      "purpose": "investment",
+      "required_agents": [
+        "Lead Parser",
+        "Lead Qualification Agent",
+        "Property Matcher",
+        "AVM Pricer",
+        "Mortgage & Affordability Agent",
+        "Area Researcher",
+        "RERA / Compliance Agent"
+      ]
+    }
+  },
+  {
+    "id": "arabic_english_reem_ready",
+    "inquiry": "مرحبا, I need a 3BHK on Al Reem Island. Budget 1.5M. Ready to move.",
+    "expected": {
+      "area": "Al Reem Island",
+      "bedrooms": 3,
+      "budget_aed": 1500000,
+      "language": "Mixed Arabic/English",
+      "purpose": "end_use",
+      "required_agents": [
+        "Lead Parser",
+        "Lead Qualification Agent",
+        "Property Matcher",
+        "AVM Pricer",
+        "Mortgage & Affordability Agent",
+        "Area Researcher",
+        "RERA / Compliance Agent"
+      ]
+    }
+  },
+  {
+    "id": "hindi_english_yas_finance",
+    "inquiry": "Need 2BHK on Yas Island. मेरा budget AED 1.8M है और mortgage चाहिए.",
+    "expected": {
+      "area": "Yas Island",
+      "bedrooms": 2,
+      "budget_aed": 1800000,
+      "language": "Mixed Hindi/English",
+      "purpose": "investment",
+      "required_agents": [
+        "Lead Parser",
+        "Lead Qualification Agent",
+        "Property Matcher",
+        "AVM Pricer",
+        "Mortgage & Affordability Agent",
+        "Area Researcher",
+        "RERA / Compliance Agent"
+      ]
+    }
+  },
+  {
+    "id": "masdar_family_home",
+    "inquiry": "Family home in Masdar City, two bedrooms, budget 1.2 million, immediately.",
+    "expected": {
+      "area": "Masdar City",
+      "bedrooms": 2,
+      "budget_aed": 1200000,
+      "language": "English",
+      "purpose": "end_use",
+      "required_agents": [
+        "Lead Parser",
+        "Lead Qualification Agent",
+        "Property Matcher",
+        "AVM Pricer",
+        "Mortgage & Affordability Agent",
+        "Area Researcher",
+        "RERA / Compliance Agent"
+      ]
+    }
+  }
+]

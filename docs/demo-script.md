@@ -32,6 +32,7 @@ Show:
 - conversation memory via `GET /v1/conversations/demo-buyer-1`
 - observability via `GET /v1/observability/metrics`
 - evaluation dashboard via `GET /v1/evaluations/dashboard`
+- evaluation suite via `POST /v1/evaluations/run`
 - pending approval status
 
 ## 3. Approve the run

@@ -9,6 +9,7 @@ from fastapi.responses import FileResponse, StreamingResponse
 
 from .domain import ApprovalRequest, ConversationTurn, InquiryRequest, RunResponse
 from .evaluation import EVALUATION_DASHBOARD
+from .evaluator import run_evaluation_suite
 from .memory import add_turn, get_conversation, summarize_context, conversation_count
 from .observability import metrics, record_run_status, record_trace
 from .workflow import OUTPUT_DIR, get_state, resume_run, start_run
@@ -86,6 +87,11 @@ def read_metrics() -> dict:
 @app.get("/v1/evaluations/dashboard")
 def evaluation_dashboard() -> dict:
     return EVALUATION_DASHBOARD
+
+
+@app.post("/v1/evaluations/run")
+def run_evaluations() -> dict:
+    return run_evaluation_suite()
 
 
 @app.get("/v1/runs/{run_id}/proposal.pdf")

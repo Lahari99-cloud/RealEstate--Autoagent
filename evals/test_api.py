@@ -3,6 +3,7 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 
 from backend.app.data import LISTINGS
+from backend.app.evaluator import load_golden_dataset, run_evaluation_suite
 from backend.app.main import app
 
 
@@ -88,5 +89,23 @@ def test_memory_observability_evaluation_and_hindi_support():
     assert metrics["agent_call_counts"]["RERA / Compliance Agent"] >= 1
 
     dashboard = client.get("/v1/evaluations/dashboard").json()
-    assert dashboard["status"] == "foundation"
-    assert "golden inquiry dataset" in dashboard["planned_checks"]
+    assert dashboard["status"] == "implemented_foundation"
+    assert dashboard["golden_case_count"] >= 4
+    assert "golden inquiry dataset regression" in dashboard["implemented_checks"]
+
+
+def test_golden_dataset_quality_evaluation_suite():
+    assert len(load_golden_dataset()) >= 4
+    report = run_evaluation_suite()
+    assert report["status"] == "passed"
+    assert report["overall_score"] >= 0.85
+    assert report["extraction_score"] >= 0.85
+    assert report["groundedness_score"] >= 0.85
+    assert report["tool_selection_score"] == 1.0
+    assert all(result["groundedness"]["checks"]["all_recommendations_from_inventory"] for result in report["results"])
+
+
+def test_evaluation_run_endpoint():
+    report = client.post("/v1/evaluations/run").json()
+    assert report["case_count"] >= 4
+    assert report["status"] == "passed"

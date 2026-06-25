@@ -54,7 +54,10 @@ scripts/        Local demo utilities
 - UAE/RERA-style compliance checklist and disclaimer generation.
 - Conversation memory via `conversation_id` and `/v1/conversations/{conversation_id}`.
 - Observability metrics via `/v1/observability/metrics`.
-- Evaluation dashboard foundation via `/v1/evaluations/dashboard`.
+- Evaluation dashboard via `/v1/evaluations/dashboard`.
+- Golden dataset quality suite via `/v1/evaluations/run`.
+- Groundedness checks to confirm recommendations are sourced from inventory.
+- Tool-selection accuracy scoring for the LangGraph agent sequence.
 - Human approval gate before PDF generation.
 - Safe observability traces for each agent step.
 - Client-ready PDF proposal output.
@@ -142,6 +145,7 @@ Useful production-readiness endpoints:
 GET /v1/conversations/{conversation_id}
 GET /v1/observability/metrics
 GET /v1/evaluations/dashboard
+POST /v1/evaluations/run
 ```
 
 ## Test
@@ -156,9 +160,18 @@ This repository is an MVP focused on the core property recommendation workflow. 
 
 The architecture is intentionally modular so production-grade upgrades, such as Redis-backed memory, Langfuse/OpenTelemetry export, and full evaluation dashboards, can be added without changing the orchestration layer.
 
-## Evaluation status
+## Evaluation layer
 
-The repository includes API and workflow tests plus a dashboard endpoint as the foundation of an evaluation framework. Production-grade agent evaluation, including golden datasets, LLM-as-judge checks, regression tracking, latency metrics, and cost dashboards, is planned for the next iteration.
+The repository includes a concrete evaluation foundation:
+
+- `evals/golden_inquiries.json` stores golden buyer inquiries and expected outputs.
+- `backend/app/evaluator.py` runs regression scoring against the real workflow.
+- extraction scoring checks area, bedrooms, budget, language, and purpose.
+- groundedness scoring checks that recommendations come from the connected inventory and include compliance disclaimers.
+- tool-selection scoring checks that required agents ran in the expected order.
+- `POST /v1/evaluations/run` returns a suite report with overall, extraction, groundedness, and tool-selection scores.
+
+Production-grade extensions such as LLM-as-judge review, historical trend tracking, CI quality gates, latency metrics, and cost dashboards are planned for the next iteration.
 
 ## Production evolution
 
@@ -170,7 +183,7 @@ Recommended production upgrades:
 - durable LangGraph checkpointing
 - Redis-backed conversation memory
 - OpenTelemetry or Langfuse observability export
-- full evaluation framework with golden datasets, LLM-as-judge checks, regression tracking, latency dashboards, and cost metrics
+- LLM-as-judge checks, historical regression tracking, latency dashboards, and cost metrics
 - OAuth/RBAC
 - tenant isolation
 - signed object-storage URLs for PDFs
